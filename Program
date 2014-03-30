@@ -1,0 +1,118 @@
+#include<stdio.h>
+#include<math.h>
+#include<algorithm>
+const int MOD=10007 , NR=52, RMAX=1603, SUP=83, TMAX=803;
+using namespace std;
+FILE *f,*g;
+
+int Tx,Ty,Mx,My,R,nr;
+
+int rau[NR], bad[SUP][RMAX];
+
+int dyn[TMAX][RMAX][2], sum[RMAX];
+
+int comb[RMAX][RMAX];
+
+void read(void){
+
+    f=fopen("foxjumping.in","r");
+    g=fopen("foxjumping.out","w");
+
+    fscanf(f,"%d%d%d%d%d%d",&Tx,&Ty,&Mx,&My,&R,&nr);
+
+    int i;
+    for(i=1;i<=nr;i++) fscanf(f,"%d",&rau[i]);
+    rau[++nr]=0;
+}
+
+int modulo(int x){
+
+    if (x<0) return x+MOD;
+    else if (x>=MOD) return x-MOD;
+        else return x;
+}
+
+void dynamic(int t, int m, int x){
+
+    int i, j;
+    
+    for(i=0;i<=R;i++){
+        sum[i]=1;
+        dyn[0][i][x]=1;
+    }
+
+    for(i=1;i<=t;i++){
+        dyn[i][0][x]=0;
+        if (i == m+1) sum[0]=0;
+
+        for(j=1 ; j<=R ; j++){
+
+            dyn[i][j][x]=sum[j-1];
+            
+            sum[j] = modulo (sum[j] + dyn[i][j][x]);
+
+            if (i >= m+1) sum[j] = modulo (sum[j] - dyn[i-m-1][j][x]);
+
+        }
+    }
+}
+
+void findrau(void){
+
+    int i,l,k;
+
+    bad[0][0]=1;
+    for(i=1;i<=R;i++){
+        for(l=0;l<=80;l++){
+            for(k=1;k<=nr;k++){
+                
+                if (l*10+rau[k]<=800) bad[l+rau[k]/10][i] = max (bad[l+rau[k]/10][i] , bad[l][i-1]); 
+            }
+        }
+    }
+}
+
+void findcomb(void){
+
+    int i,j;
+    for(i=1;i<=R;i++){
+
+        comb[i][0]=1; comb[i][i]=1;
+        
+        for(j=1;j<=i-1;j++){
+            comb[i][j] = modulo(comb[i-1][j] + comb[i-1][j-1]);
+        }
+
+
+    }
+}
+
+int findposib(void){
+
+    int i; int sign=-1; int j, sum; int posib=0;
+    for(i=0;i<=R;i++){
+
+        sign*=-1;
+        sum=0;
+        for(j=0;j<=80;j++){
+            if (bad[j][i] && j*10<=min(Tx,Ty)) sum = modulo( sum + ((long long) dyn[Tx-j*10][R-i][0] * dyn[Ty-j*10][R-i][1])%MOD ); 
+        }
+        posib = modulo( posib + (sign * (long long) sum * comb[R][i] ) % MOD );
+
+    }
+
+    return posib;
+
+}
+
+
+
+int main(void){
+
+    read();
+    findcomb();
+    findrau();
+    dynamic(Tx,Mx,0);
+    dynamic(Ty,My,1);
+    fprintf(g,"%d",findposib());
+}
